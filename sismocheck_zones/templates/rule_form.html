@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ 'Modifier la règle' if rule else 'Nouvelle règle' }}</h1><p>Événement : soumission du formulaire. Toutes les conditions doivent être vraies pour déclencher la règle.</p></div>
+  <div class="pills"><a href="{{ url_for('rules_list') }}">Retour aux règles</a></div>
+</div>
+<form method="post" class="panel"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="row">
+    <div class="col-md-8 mb-3"><label class="form-label">Nom de la règle</label>
+      <input name="name" class="form-control" required value="{{ rule.name if rule else request.form.get('name', '') }}"></div>
+    <div class="col-md-4 mb-3"><label class="form-label">Auteur ou rôle</label>
+      <input name="author" class="form-control" value="{{ rule.author if rule else role_label }}"></div>
+  </div>
+  <div class="panel-title mt-2">Conditions</div>
+  <div class="panel-sub">Laissez une ligne vide si elle ne sert pas. Au moins une condition est obligatoire.</div>
+  {% for i in range(5) %}
+    {% set c = rule.conditions[i] if rule and i < rule.conditions|length else None %}
+    <div class="row g-2 mb-2">
+      <div class="col-md-5"><select name="c_field_{{ i }}" class="form-select">
+        <option value="">Champ</option>
+        {% for name, f in fields.items() %}<option value="{{ name }}" {{ 'selected' if c and c.field == name }}>{{ f.label }} [{{ name }}]</option>{% endfor %}
+      </select></div>
+      <div class="col-md-2"><select name="c_op_{{ i }}" class="form-select">
+        {% for o in ops %}<option {{ 'selected' if c and c.op == o }}>{{ o }}</option>{% endfor %}
+      </select></div>
+      <div class="col-md-5"><input name="c_value_{{ i }}" class="form-control" placeholder="Valeur (ex : instable, 40, 6.5)" value="{{ c.value if c else '' }}"></div>
+    </div>
+  {% endfor %}
+  <small class="text-muted d-block mb-4">Les points s'additionnent pour l'indice de risque (plafonné à 100). Valeurs texte possibles : stable, moyen, instable · bon, fissures_mineures, fissures_diagonales · oui, non · respecte, non_respecte, inconnu.</small>
+  <div class="row">
+    <div class="col-md-3 mb-3"><label class="form-label">Niveau de risque attribué</label>
+      <select name="level" class="form-select">
+        {% for k, lab in LEVEL_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if rule and rule.level == k }}>{{ lab }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-2 mb-3"><label class="form-label">Points (0-100)</label>
+      <input name="points" type="number" min="0" max="100" class="form-control" value="{{ rule.points if rule else request.form.get('points', '') }}" placeholder="auto"></div>
+    <div class="col-md-7 mb-3"><label class="form-label">Message d'explication affiché à l'utilisateur</label>
+      <input name="message" class="form-control" required value="{{ rule.message if rule else '' }}"></div>
+  </div>
+  <button class="btn btn-primary">Enregistrer la règle</button>
+  <a class="btn btn-link" href="{{ url_for('rules_list') }}">Annuler</a>
+</form>
+{% endblock %}

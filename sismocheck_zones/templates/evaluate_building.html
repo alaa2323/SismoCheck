@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Étape 2 : le bâtiment</h1><p>La zone « {{ zone.name }} » est exposée aux séismes : décrivez maintenant ce que vous observez. Ce contrôle est préliminaire et ne remplace pas l'avis d'un ingénieur en structure.</p></div>
+  <div class="pills"><a href="{{ url_for('evaluate') }}">Changer de zone</a><a class="active" href="#">Étape 2 sur 2</a></div>
+</div>
+<form method="post" action="{{ url_for('evaluate_building') }}" class="panel"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="zone_id" value="{{ zone.id }}">
+  <input type="hidden" name="building_name" value="{{ building_name }}">
+  <div class="alert alert-secondary d-flex flex-wrap gap-3 mb-4">
+    <span><i class="bi bi-building me-1"></i><strong>{{ building_name }}</strong></span>
+    <span><i class="bi bi-geo-alt me-1"></i>{{ zone.name }}{% if zone.country %}, {{ zone.country }}{% endif %}</span>
+    <span class="badge text-bg-warning align-self-center">Zone exposée aux séismes</span>
+  </div>
+  <div class="row">
+  {% for f in fields %}
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ f.label }}</label>
+      {% if f.type == 'choice' %}
+        <select name="{{ f.name }}" class="form-select" required>
+          <option value="">Choisir…</option>
+          {% for val, lab in f.choices %}
+            <option value="{{ val }}" {{ 'selected' if values.get(f.name) == val }}>{{ lab }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input name="{{ f.name }}" type="number" class="form-control" required
+               min="{{ f.min }}" max="{{ f.max }}" step="{{ '0.1' if f.type == 'float' else '1' }}"
+               value="{{ values.get(f.name, '') }}">
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  <button class="btn btn-primary mt-2"><i class="bi bi-activity me-1"></i>Évaluer le risque</button>
+</form>
+{% endblock %}

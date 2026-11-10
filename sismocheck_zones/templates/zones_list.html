@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Zones</h1><p>La zone est contrôlée en premier. Zone sécurisée (non exposée aux séismes) : le bâtiment n'est pas évalué et le risque est faible. Zone exposée : on passe aux critères du bâtiment.</p></div>
+  <div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{{ url_for('rules_list') }}"><i class="bi bi-diagram-3 me-1"></i>Règles</a>
+  <a class="btn btn-primary" href="{{ url_for('zone_form') }}"><i class="bi bi-plus-lg me-1"></i>Nouvelle zone</a></div>
+</div>
+<div class="panel table-panel table-responsive">
+<table class="table table-striped">
+  <thead><tr><th>Zone</th><th>Pays</th><th>Statut</th><th>Bâtiments évalués</th><th>Note</th><th></th></tr></thead>
+  {% for z in zones %}
+  <tr><td>{{ z.name }}</td><td class="text-muted">{{ z.country or '—' }}</td>
+      <td>{% if z.secure %}<span class="badge text-bg-success">Sécurisée</span>{% else %}<span class="badge text-bg-warning">Exposée aux séismes</span>{% endif %}</td>
+      <td>{{ z.buildings }}</td><td class="text-muted small">{{ z.note }}</td>
+      <td class="text-end text-nowrap">
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('zone_form', zone_id=z.id) }}">Modifier</a>
+        <form method="post" action="{{ url_for('zone_delete', zone_id=z.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette zone ?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
+      </td></tr>
+  {% else %}<tr><td colspan="6" class="text-center text-muted py-5">Aucune zone. Ajoutez-en une pour permettre les évaluations.</td></tr>{% endfor %}
+</table>
+</div>
+{% endblock %}

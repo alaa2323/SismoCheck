@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ 'Modifier la zone' if zone else 'Nouvelle zone' }}</h1><p>Cochez « sécurisée » si la zone n'est pas exposée aux séismes : les critères du bâtiment ne seront alors pas évalués.</p></div>
+  <div class="pills"><a href="{{ url_for('zones_list') }}">Retour aux zones</a></div>
+</div>
+<form method="post" class="panel" style="max-width:640px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="row">
+    <div class="col-md-7 mb-3"><label class="form-label">Nom de la zone</label>
+      <input name="name" class="form-control" required minlength="2" maxlength="60" value="{{ values.get('name', '') }}"></div>
+    <div class="col-md-5 mb-3"><label class="form-label">Pays</label>
+      <input name="country" class="form-control" maxlength="60" value="{{ values.get('country', '') }}"></div>
+  </div>
+  <div class="mb-3"><label class="form-label">Note (source du classement, par exemple)</label>
+    <input name="note" class="form-control" maxlength="200" value="{{ values.get('note', '') }}"></div>
+  <div class="form-check mb-4">
+    <input class="form-check-input" type="checkbox" name="secure" id="secure" {{ 'checked' if values.get('secure') in (True, 'on', '1', 1) }}>
+    <label class="form-check-label" for="secure">Zone sécurisée (non exposée aux séismes)</label>
+  </div>
+  <button class="btn btn-primary">Enregistrer</button>
+  <a class="btn btn-link" href="{{ url_for('zones_list') }}">Annuler</a>
+</form>
+{% endblock %}

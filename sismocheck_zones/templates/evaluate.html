@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Évaluer un bâtiment</h1><p>Étape 1 : indiquez d'abord la zone. Si elle n'est pas exposée aux séismes, le bâtiment n'a pas besoin d'être décrit.</p></div>
+  <div class="pills"><a class="active" href="{{ url_for('evaluate') }}">Nouvelle évaluation</a><a href="{{ url_for('history') }}">Historique</a></div>
+</div>
+<form method="post" class="panel" style="max-width:640px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="mb-4">
+    <label class="form-label">Nom ou adresse du bâtiment</label>
+    <input name="building_name" class="form-control" value="{{ values.get('building_name', '') }}" placeholder="Ex : Immeuble A">
+  </div>
+  <div class="mb-4">
+    <label class="form-label">Zone (ville ou région)</label>
+    <select name="zone_id" class="form-select" required>
+      <option value="">Choisir une zone…</option>
+      {% for z in zones %}<option value="{{ z.id }}" {{ 'selected' if values.get('zone_id') == z.id|string }}>{{ z.name }}{% if z.country %} ({{ z.country }}){% endif %}</option>{% endfor %}
+    </select>
+    {% if can('rules') %}<small class="text-muted">La liste vient de la table des zones. <a href="{{ url_for('zones_list') }}">Gérer les zones</a></small>{% endif %}
+  </div>
+  <button class="btn btn-primary">Continuer <i class="bi bi-arrow-right ms-1"></i></button>
+</form>
+{% endblock %}
