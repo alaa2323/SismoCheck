@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Utilisateurs</h1><p>Gérez les comptes et leurs rôles. Seul un administrateur peut attribuer le rôle Administrateur.</p></div>
+  <div class="pills"><a href="{{ url_for('admin_dashboard') }}">Tableau de bord</a><a class="active" href="{{ url_for('users_list') }}">Utilisateurs</a></div>
+</div>
+<div class="panel table-panel table-responsive">
+<table class="table table-striped">
+  <thead><tr><th>N°</th><th>Utilisateur</th><th>Rôle</th><th>Créé le</th><th></th></tr></thead>
+  {% for u in users %}
+  <tr><td>{{ u.id }}</td><td>{{ u.username }}{% if u.id == session.user_id %} <span class="badge text-bg-secondary">vous</span>{% endif %}</td>
+      <td>
+        {% if u.id == session.user_id %}<span class="badge text-bg-dark">{{ ROLES[u.role] }}</span>
+        {% else %}
+        <form method="post" action="{{ url_for('user_role', user_id=u.id) }}" class="d-flex gap-2" style="max-width:300px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="role" class="form-select form-select-sm">
+            {% for k, lab in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if u.role == k }}>{{ lab }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-sm btn-outline-primary">Appliquer</button>
+        </form>
+        {% endif %}
+      </td>
+      <td class="text-muted">{{ u.created_at }}</td>
+      <td class="text-end">
+        {% if u.id != session.user_id %}
+        <form method="post" action="{{ url_for('user_delete', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cet utilisateur et ses évaluations ?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
+        {% endif %}
+      </td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

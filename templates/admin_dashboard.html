@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Bienvenue, {{ session.username }}</h1><p>Voici l'activité de l'application aujourd'hui.</p></div>
+  <div class="pills">
+    <a class="active" href="{{ url_for('admin_dashboard') }}">Vue d'ensemble</a>
+    {% if can('rules') %}<a href="{{ url_for('rule_form') }}">Nouvelle règle</a>{% endif %}
+    {% if can('users') %}<a href="{{ url_for('users_list') }}">Utilisateurs</a>{% endif %}
+    {% if can('all_evals') %}<a href="{{ url_for('all_evaluations') }}">Évaluations</a>{% endif %}
+  </div>
+</div>
+{% if weak_password %}<div class="alert alert-warning"><i class="bi bi-shield-exclamation me-2"></i>Votre mot de passe est le mot de passe par défaut. <a href="{{ url_for('account') }}">Changez-le maintenant</a>.</div>{% endif %}
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6 col-xl-3"><div class="panel kpi" style="--c:var(--orange)">
+    <div><div class="ico"><i class="bi bi-clipboard-pulse"></i></div><div class="label">Évaluations</div></div>
+    <canvas id="sp-eval" aria-hidden="true"></canvas>
+    <div><div class="value">{{ stats.evaluations }}</div><div class="delta"><b>+{{ stats.week_eval }}</b> cette semaine · indice moyen {{ stats.avg_score }}/100</div></div>
+  </div></div>
+  <div class="col-md-6 col-xl-3"><div class="panel kpi" style="--c:var(--blue)">
+    <div><div class="ico"><i class="bi bi-exclamation-triangle"></i></div><div class="label">Risque élevé</div></div>
+    <canvas id="sp-high" aria-hidden="true"></canvas>
+    <div><div class="value">{{ stats.high_pct }}%</div><div class="delta"><b>{{ stats.week_high }}</b> cette semaine</div></div>
+  </div></div>
+  <div class="col-md-6 col-xl-3"><div class="panel kpi" style="--c:var(--teal)">
+    <div><div class="ico"><i class="bi bi-people"></i></div><div class="label">Utilisateurs</div></div>
+    <canvas id="sp-users" aria-hidden="true"></canvas>
+    <div><div class="value">{{ stats.users }}</div><div class="delta"><b>+{{ stats.week_users }}</b> cette semaine</div></div>
+  </div></div>
+  <div class="col-md-6 col-xl-3"><div class="panel kpi" style="--c:var(--violet)">
+    <div><div class="ico"><i class="bi bi-diagram-3"></i></div><div class="label">Règles actives</div></div>
+    <div><div class="value">{{ stats.rules_active }}<span class="fs-5 text-muted"> / {{ stats.rules }}</span></div>
+      <div class="delta">{{ stats.rules - stats.rules_active }} désactivée{{ 's' if stats.rules - stats.rules_active > 1 }}</div></div>
+  </div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-xl-8"><div class="panel h-100">
+    <div class="panel-title">Évaluations par jour</div>
+    <div class="panel-sub">30 derniers jours, selon le niveau de risque</div>
+    <div class="chart-box"><canvas id="main-chart"></canvas></div>
+  </div></div>
+  <div class="col-xl-4"><div class="panel h-100">
+    <div class="panel-title">Répartition du risque</div>
+    <div class="panel-sub">Toutes les évaluations</div>
+    <div class="gauge-box"><canvas id="gauge"></canvas>
+      <div class="gauge-center"><div class="n">{{ stats.evaluations }}</div><small>évaluations</small></div></div>
+    <div class="legend-grid">
+      {% for key, color in [('faible', 'var(--ok)'), ('moyen', 'var(--warn)'), ('eleve', 'var(--bad)')] %}
+        {% set n = stats.by_level.get(key, 0) %}
+        <div><span class="dot" style="background:{{ color }}"></span>{{ LEVEL_LABELS[key] }}</div>
+        <div class="text-end">{{ n }} · {{ ((n * 100 / stats.evaluations) | round | int) if stats.evaluations else 0 }}%</div>
+      {% endfor %}
+    </div>
+  </div></div>
+</div>
+
+<div class="d-flex justify-content-between align-items-end mb-3">
+  <div><div class="panel-title fs-5 mb-0">Règles les plus déclenchées</div><div class="text-muted small">Celles qui pèsent le plus dans les résultats</div></div>
+  <a href="{{ url_for('rules_list') }}">Voir toutes les règles</a>
+</div>
+<div class="row g-4">
+  {% for r in stats.top_rules %}
+  <div class="col-md-6 col-xl-3"><a class="panel tile" href="{{ url_for('rules_list') }}">
+    <div class="ico"><i class="bi bi-lightning-charge"></i></div>
+    <h3>{{ r.name }}</h3>
+    <p class="mb-3">{{ r.message }}</p>
+    <span class="badge text-bg-{{ LEVEL_COLORS[r.level] }}">{{ LEVEL_LABELS[r.level] }}</span>
+    <span class="text-muted small ms-2">{{ r.n }} fois</span>
+  </a></div>
+  {% else %}
+  <div class="col-12"><div class="panel text-center text-muted py-4">Aucune règle déclenchée pour le moment. Les statistiques apparaîtront après les premières évaluations.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const D = {{ chart | tojson }};
+const css = getComputedStyle(document.documentElement);
+const col = n => css.getPropertyValue(n).trim();
+Chart.defaults.color = '#9a98c4';
+Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+
+function spark(id, data, color) {
+  const c = document.getElementById(id); if (!c) return;
+  const g = c.getContext('2d').createLinearGradient(0, 0, 0, 70);
+  g.addColorStop(0, color + '66'); g.addColorStop(1, color + '00');
+  new Chart(c, { type: 'line',
+    data: { labels: D.labels, datasets: [{ data, borderColor: color, backgroundColor: g, fill: true, tension: .4, pointRadius: 0, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, events: [],
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false, beginAtZero: true } } } });
+}
+spark('sp-eval', D.total, '#f08a24');
+spark('sp-high', D.eleve, '#5b7cf6');
+spark('sp-users', D.users, '#2cc7b8');
+
+const ctx = document.getElementById('main-chart').getContext('2d');
+function area(color) { const g = ctx.createLinearGradient(0, 0, 0, 300); g.addColorStop(0, color + '55'); g.addColorStop(1, color + '00'); return g; }
+new Chart(ctx, { type: 'line',
+  data: { labels: D.labels, datasets: [
+    { label: 'Risque faible', data: D.faible, borderColor: '#3ddc84', backgroundColor: area('#3ddc84'), fill: true, tension: .35, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 },
+    { label: 'Risque moyen', data: D.moyen, borderColor: '#f5b73b', backgroundColor: area('#f5b73b'), fill: true, tension: .35, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 },
+    { label: 'Risque élevé', data: D.eleve, borderColor: '#ff5d6c', backgroundColor: area('#ff5d6c'), fill: true, tension: .35, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 } ] },
+  options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+    scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+              y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(158,140,255,.12)' } } } } });
+
+const hasData = D.levels.some(v => v > 0);
+new Chart(document.getElementById('gauge'), { type: 'doughnut',
+  data: { labels: ['Risque faible', 'Risque moyen', 'Risque élevé'],
+          datasets: [{ data: hasData ? D.levels : [1], backgroundColor: hasData ? ['#3ddc84', '#f5b73b', '#ff5d6c'] : ['rgba(255,255,255,.1)'], borderWidth: 0, borderRadius: 6, spacing: 3 }] },
+  options: { responsive: true, maintainAspectRatio: false, rotation: -90, circumference: 180, cutout: '78%',
+    plugins: { legend: { display: false }, tooltip: { enabled: hasData } } } });
+</script>
+{% endblock %}
