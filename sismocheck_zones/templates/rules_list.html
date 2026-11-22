@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Règles métier</h1><p>Ces règles s'appliquent seulement aux zones exposées aux séismes. Chaque règle suit le principe ECA : si l'événement se produit et que les conditions sont vraies, le niveau de risque et les points sont attribués.</p></div>
+  <div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{{ url_for('zones_list') }}"><i class="bi bi-geo-alt me-1"></i>Zones</a>
+  <a class="btn btn-primary" href="{{ url_for('rule_form') }}"><i class="bi bi-plus-lg me-1"></i>Nouvelle règle</a></div>
+</div>
+<div class="panel table-panel table-responsive">
+<table class="table table-striped">
+  <thead><tr><th>Nom</th><th>Si (conditions, ET)</th><th>Alors</th><th>Points</th><th>Auteur</th><th></th></tr></thead>
+  {% for r in rules %}
+  <tr class="{{ '' if r.active else 'opacity-50' }}">
+    <td>{{ r.name }}{% if not r.active %} <span class="badge text-bg-secondary">désactivée</span>{% endif %}</td>
+    <td>{% for c in r.conditions %}<code>{{ c.field }} {{ c.op }} {{ c.value }}</code>{{ ' ET ' if not loop.last }}{% endfor %}</td>
+    <td><span class="badge text-bg-{{ LEVEL_COLORS[r.level] }}">{{ LEVEL_LABELS[r.level] }}</span></td>
+    <td>{{ r.points }}</td>
+    <td class="text-muted">{{ r.author }}</td>
+    <td class="text-end text-nowrap">
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('rule_form', rule_id=r.id) }}">Modifier</a>
+      <form method="post" action="{{ url_for('rule_toggle', rule_id=r.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">{{ 'Désactiver' if r.active else 'Activer' }}</button></form>
+      <form method="post" action="{{ url_for('rule_delete', rule_id=r.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette règle ?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
+    </td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

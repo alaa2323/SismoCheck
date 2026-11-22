@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel auth-card">
+  <div class="brand"><svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f08a24"/><stop offset=".5" stop-color="#b05cf0"/><stop offset="1" stop-color="#5b7cf6"/></linearGradient></defs><path d="M20 4 36 35H4z" fill="url(#lg)"/><path d="M20 15 27 30H13z" fill="#0a0a1f" opacity=".55"/></svg> SismoCheck</div>
+  <h1>Connexion</h1>
+  <p class="lead">Évaluez le risque sismique d'un bâtiment à partir de règles métier.</p>
+  <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3"><label class="form-label">Nom d'utilisateur</label><input name="username" class="form-control" required autofocus></div>
+    <div class="mb-4"><label class="form-label">Mot de passe</label><input type="password" name="password" class="form-control" required></div>
+    <button class="btn btn-primary w-100">Se connecter</button>
+  </form>
+  <p class="mt-4 mb-0 text-center text-muted">Pas de compte ? <a href="{{ url_for('register') }}">Créer un compte</a></p>
+</div>
+{% endblock %}

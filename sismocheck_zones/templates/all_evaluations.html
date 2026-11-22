@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Évaluations</h1><p>Toutes les évaluations réalisées par les utilisateurs.</p></div>
+  <div class="pills"><a href="{{ url_for('admin_dashboard') }}">Tableau de bord</a><a class="active" href="{{ url_for('all_evaluations') }}">Évaluations</a></div>
+</div>
+<form method="get" class="filters">
+  <input name="q" class="form-control" placeholder="Bâtiment ou utilisateur" value="{{ q }}" style="max-width:320px">
+  <select name="level" class="form-select" style="max-width:220px">
+    <option value="">Tous les niveaux</option>
+    {% for k, lab in LEVEL_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if level == k }}>{{ lab }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-outline-primary">Filtrer</button>
+  {% if q or level %}<a class="btn btn-link" href="{{ url_for('all_evaluations') }}">Effacer</a>{% endif %}
+</form>
+<div class="panel table-panel table-responsive">
+<table class="table table-striped">
+  <thead><tr><th>N°</th><th>Bâtiment</th><th>Zone</th><th>Utilisateur</th><th>Niveau</th><th>Indice</th><th>Date</th><th></th></tr></thead>
+  {% for r in rows %}
+  <tr><td>{{ r.id }}</td><td>{{ r.building_name }}</td><td>{{ r.zone_name or '—' }}</td><td>{{ r.username }}</td>
+      <td><span class="badge text-bg-{{ LEVEL_COLORS[r.level] }}">{{ LEVEL_LABELS[r.level] }}</span></td>
+      <td>{{ r.score }}/100</td>
+      <td class="text-muted">{{ r.created_at }}</td>
+      <td class="text-end text-nowrap">
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('result', eval_id=r.id) }}">Détail</a>
+        {% if session.role == 'admin' %}<form method="post" action="{{ url_for('evaluation_delete', eval_id=r.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette évaluation ?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>{% endif %}
+      </td></tr>
+  {% else %}<tr><td colspan="8" class="text-center text-muted py-5">Aucune évaluation trouvée.</td></tr>{% endfor %}
+</table>
+</div>
+{% endblock %}
