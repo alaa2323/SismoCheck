@@ -7,8 +7,16 @@ trigger:
 pool:
   name: agent2
 
+<<<<<<< HEAD
 variables:
   appDir: sismocheck_zones
+=======
+steps:
+  - script: |
+      cd
+      dir
+    displayName: Diagnostic
+>>>>>>> main
 
 stages:
   - stage: Test
@@ -20,6 +28,7 @@ stages:
             workingDirectory: $(appDir)
             displayName: Installer les dépendances
 
+<<<<<<< HEAD
           - script: python -m unittest discover -s tests -v
             workingDirectory: $(appDir)
             displayName: Lancer les tests unitaires
@@ -51,3 +60,7 @@ stages:
               steps:
                 - script: echo Déploiement de SismoCheck sur Staging
                   displayName: Déployer sur Staging
+=======
+  - script: python -m unittest discover -s tests -v
+    displayName: Lancer les tests unitaires
+>>>>>>> main

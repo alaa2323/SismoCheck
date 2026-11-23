@@ -1,0 +1,20 @@
+# Pipeline Azure DevOps : lance les tests unitaires à chaque modification de la branche main
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.12"
+    displayName: Installer Python
+
+  - script: python -m pip install -r requirements.txt
+    displayName: Installer les dépendances
+
+  - script: python -m unittest discover -s tests -v
+    displayName: Lancer les tests unitaires

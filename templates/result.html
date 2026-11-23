@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+{% set pos = {'faible': [48.04, 70], 'moyen': [100, 40], 'eleve': [151.96, 70]} %}
+<div class="page-head">
+  <div><h1>{{ ev.building_name }}</h1><p>{% if ev.zone_name %}Zone : {{ ev.zone_name }}{% if ev.zone_country %} ({{ ev.zone_country }}){% endif %} · {% endif %}Évaluation n°{{ ev.id }} · {{ ev.created_at }}{% if ev.user_id != session.user_id %} · {{ ev.username }}{% endif %}</p></div>
+  <div class="d-flex flex-wrap gap-2 align-items-center no-print">
+  <button type="button" class="btn btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimer / PDF</button>
+  {% if ev.user_id == session.user_id or session.role == 'admin' %}
+  <form method="post" action="{{ url_for('evaluation_delete', eval_id=ev.id) }}" onsubmit="return confirm('Supprimer cette évaluation ?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i>Supprimer</button></form>
+  {% endif %}
+  <div class="pills">
+    {% if can('all_evals') %}<a href="{{ url_for('all_evaluations') }}">Toutes les évaluations</a>
+    {% endif %}{% if can('evaluate') %}<a href="{{ url_for('evaluate') }}">Nouvelle évaluation</a><a href="{{ url_for('history') }}">Historique</a>{% endif %}
+  </div>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="panel verdict {{ ev.level }}">
+      <svg viewBox="0 0 200 118" style="width:100%;max-width:300px" role="img" aria-label="{{ LEVEL_LABELS[ev.level] }}">
+        <path d="M20 100A80 80 0 0 1 60 30.72" fill="none" stroke="#3ddc84" stroke-width="16" stroke-linecap="round" opacity="{{ 1 if ev.level == 'faible' else 0.28 }}"/>
+        <path d="M66 27.5A80 80 0 0 1 134 27.5" fill="none" stroke="#f5b73b" stroke-width="16" stroke-linecap="round" opacity="{{ 1 if ev.level == 'moyen' else 0.28 }}"/>
+        <path d="M140 30.72A80 80 0 0 1 180 100" fill="none" stroke="#ff5d6c" stroke-width="16" stroke-linecap="round" opacity="{{ 1 if ev.level == 'eleve' else 0.28 }}"/>
+        <line x1="100" y1="100" x2="{{ pos[ev.level][0] }}" y2="{{ pos[ev.level][1] }}" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="100" cy="100" r="7" fill="#fff"/>
+      </svg>
+      <div class="name">{{ LEVEL_LABELS[ev.level] }}</div>
+      <div class="mt-3 text-start"><div class="d-flex justify-content-between small"><span class="text-muted">Indice de risque</span><strong>{{ ev.score }}/100</strong></div>
+        <div class="progress mt-1"><div class="progress-bar bg-{{ LEVEL_COLORS[ev.level] }}" style="width: {{ ev.score }}%"></div></div></div>
+    </div>
+    {% if ev.zone_secure %}
+    <div class="panel mt-4"><div class="panel-title">Bâtiment</div>
+      <p class="text-muted mb-0">Zone non exposée aux séismes : les critères du bâtiment n'ont pas été demandés.</p></div>
+    {% else %}
+    <div class="panel mt-4">
+      <div class="panel-title">Données saisies</div>
+      <table class="table table-sm mt-2">
+      {% for f in fields %}
+        <tr><td class="text-muted">{{ f.label }}</td><td class="text-end">
+          {% if f.type == 'choice' %}{% for v, l in f.choices %}{{ l if v == data[f.name] }}{% endfor %}{% else %}{{ data[f.name] }}{% endif %}
+        </td></tr>
+      {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="panel-title">Pourquoi ce résultat</div>
+      <div class="panel-sub">Règles déclenchées par les caractéristiques du bâtiment</div>
+      {% for t in triggered %}
+        <div class="rule-card">
+          <div class="bar {{ t.level }}"></div>
+          <div><strong>{{ t.name }}</strong>
+            <span class="badge text-bg-{{ LEVEL_COLORS[t.level] }} ms-2">{{ LEVEL_LABELS[t.level] }}</span>
+            <div class="text-muted small mt-1">{{ t.message }}</div></div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="panel mt-4">
+      <i class="bi bi-info-circle me-2"></i>{% if ev.zone_secure %}Ce résultat concerne le risque sismique de la zone. Il ne dit rien de l'état du bâtiment : en cas de fissures, d'inclinaison ou d'affaissement, contactez un ingénieur en structure.{% else %}Des fissures importantes, une inclinaison anormale ou un affaissement peuvent indiquer un danger : éloignez-vous et contactez un ingénieur en structure. L'absence de signes visibles ne garantit pas la sécurité du bâtiment.{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
