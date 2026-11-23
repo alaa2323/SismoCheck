@@ -5,13 +5,13 @@ trigger:
       - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: agent2
 
 steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: "3.12"
-    displayName: Installer Python
+  - script: |
+      cd
+      dir
+    displayName: Diagnostic
 
   - script: python -m pip install -r requirements.txt
     displayName: Installer les dépendances
