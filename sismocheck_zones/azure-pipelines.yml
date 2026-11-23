@@ -1,15 +1,53 @@
-# Pipeline Azure DevOps : lance les tests unitaires à chaque modification de la branche main
 trigger:
   branches:
     include:
       - main
+      - develop
 
 pool:
   name: agent2
 
-steps:
-  - script: python -m pip install -r requirements.txt
-    displayName: Installer les dépendances
+variables:
+  appDir: sismocheck_zones
 
-  - script: python -m unittest discover -s tests -v
-    displayName: Lancer les tests unitaires
+stages:
+  - stage: Test
+    displayName: Tests unitaires
+    jobs:
+      - job: UnitTests
+        steps:
+          - script: python -m pip install -r requirements.txt
+            workingDirectory: $(appDir)
+            displayName: Installer les dépendances
+
+          - script: python -m unittest discover -s tests -v
+            workingDirectory: $(appDir)
+            displayName: Lancer les tests unitaires
+
+  - stage: DeployDev
+    displayName: Déploiement Dev
+    dependsOn: Test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: Dev
+        environment: Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: echo Déploiement de SismoCheck sur Dev
+                  displayName: Déployer sur Dev
+
+  - stage: DeployStaging
+    displayName: Déploiement Staging
+    dependsOn: Test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: Staging
+        environment: Staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: echo Déploiement de SismoCheck sur Staging
+                  displayName: Déployer sur Staging
